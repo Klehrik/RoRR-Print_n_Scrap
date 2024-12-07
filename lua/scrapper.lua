@@ -131,7 +131,9 @@ obj:onDraw(function(inst)
         inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
         free_actor(actor)
         inst.last_move_was_mouse = true
-        inst:set_active(0)
+        inst.owner = -4
+        inst.did_alarm = false
+        inst.fade_alpha = 0.0
         inst:set_active(4)
 
         
