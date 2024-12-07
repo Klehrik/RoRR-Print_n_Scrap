@@ -2,6 +2,12 @@
 
 local sScrapper = Resources.sprite_load("printNScrap", "scrapper", PATH.."sprites/scrapper.png", 1, 10, 25)
 
+local animation_held_time   = 80
+local animation_print_time  = 38
+local hole_x_offset         = 0     -- Location of the hole of the scrapper relative to the origin
+local hole_y_offset         = -26
+local hole_input_scale      = 0     -- Item scale when it enters the scrapper
+
 local max_stack = 10    -- Amount of stacks that can be scrapped at once
 
 
@@ -16,7 +22,7 @@ card.object_id = obj
 card.required_tile_space            = 1
 card.spawn_with_sacrifice           = true
 card.spawn_cost                     = 65
-card.spawn_weight                   = 30   -- 3 DEBUG
+card.spawn_weight                   = 3
 card.default_spawn_rarity_override  = 1
 card.decrease_weight_on_spawn       = true
 
@@ -40,17 +46,18 @@ local free_actor = function(actor)
     actor.activity_type = 0.0
 end
 
-local free_scrapper = function(inst)
-    -- Reset scrapper active
-    inst.last_move_was_mouse = true
-    inst:set_active(0)
-end
-
 
 -- Callbacks
 
 obj:onCreate(function(inst)
     inst.is_scrapper = true     -- Flag for other crate-related mods
+
+    -- Item entry location
+    local instData = inst:get_data()
+    instData.hole_x = inst.x + hole_x_offset
+    instData.hole_y = inst.y + hole_y_offset
+
+    -- Set prompt text
     inst.translation_key = "interactable.scrapper"
     inst.text = Language.translate_token(inst.translation_key..".text")
 end)
@@ -75,7 +82,8 @@ obj:onDraw(function(inst)
             if size <= 0 then
                 inst:sound_play_at(gm.constants.wError, 1.0, 1.0, inst.x, inst.y)
                 free_actor(actor)
-                free_scrapper(inst)
+                inst.last_move_was_mouse = true
+                inst:set_active(0)
             end
 
             -- Add items to contents
@@ -110,15 +118,90 @@ obj:onDraw(function(inst)
         
         -- Start scrapper animation
         instData.animation_time = 0
+        instData.animation_items = {}
+        for i = 1, instData.taken_count do
+            -- x and y are offsets from the actor's position here
+            table.insert(instData.animation_items, {
+                sprite  = instData.taken.sprite_id,
+                x       = ((instData.taken_count - 1) * -17) + ((i - 1) * 34),
+                y       = -48,
+                scale   = 1.0
+            })
+        end
         inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
         free_actor(actor)
+        inst.last_move_was_mouse = true
+        inst:set_active(0)
         inst:set_active(4)
 
-
-    -- WIP
+        
+    -- Draw items above player
     elseif inst.active == 4 then
-        log.info("Scrapping!")
-        free_scrapper(inst)
+        for _, item in ipairs(instData.animation_items) do
+            draw_item_sprite(item.sprite,
+                            actor.x + item.x,
+                            actor.y + item.y)
+        end
+
+        if instData.animation_time < animation_held_time then instData.animation_time = instData.animation_time + 1
+        else
+            -- Turn offsets into absolute positions
+            for _, item in ipairs(instData.animation_items) do
+                item.x = actor.x + item.x
+                item.y = actor.y + item.y
+            end
+            inst:set_active(5)
+        end
+
+
+    -- Slide items towards hole
+    elseif inst.active == 5 then
+        for _, item in ipairs(instData.animation_items) do
+            draw_item_sprite(item.sprite,
+                            item.x,
+                            item.y,
+                            Helper.ease_out(item.scale, 3))
+
+            item.x = gm.lerp(item.x, instData.hole_x, 0.1)
+            item.y = gm.lerp(item.y, instData.hole_y, 0.1)
+            item.scale = gm.lerp(item.scale, hole_input_scale, 0.1)
+        end
+
+        local item = instData.animation_items[1]
+        if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
+            instData.animation_time = 0
+            inst:set_active(6)
+        end
+
+
+    -- Delay for scrapping sfx
+    elseif inst.active == 6 then
+        if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
+        else inst:set_active(7)
+        end
+
+        if instData.animation_time == 6 then
+            inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1.0, 1.0, inst.x, inst.y)
+        end
+
+
+    -- Create scrap drop(s) and reset
+    elseif inst.active == 7 then
+        local scrap = {
+            "printNScrap-scrapWhite",
+            "printNScrap-scrapGreen",
+            "printNScrap-scrapRed",
+            "",
+            "printNScrap-scrapYellow",
+        }
+        scrap = Item.find(scrap[instData.taken.tier + 1])
+
+        for i = 1, instData.taken_count do
+            local created = scrap:create(instData.hole_x, instData.hole_y, inst)
+            created.is_scrap = true
+        end
+
+        inst:set_active(0)
 
     end
 end)
