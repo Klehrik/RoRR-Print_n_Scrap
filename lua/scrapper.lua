@@ -16,7 +16,7 @@ card.object_id = obj
 card.required_tile_space            = 1
 card.spawn_with_sacrifice           = true
 card.spawn_cost                     = 65
-card.spawn_weight                   = 300   -- 3 DEBUG
+card.spawn_weight                   = 30   -- 3 DEBUG
 card.default_spawn_rarity_override  = 1
 card.decrease_weight_on_spawn       = true
 

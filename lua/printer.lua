@@ -9,7 +9,7 @@ local spawn_rarities  = {1, 1, 4, 4}          -- Small/large chests are 1, and d
 
 local item_colors = {Color.ITEM_WHITE, Color.ITEM_GREEN, Color.ITEM_RED, 0, Color.ITEM_YELLOW}
 local text_colors = {"", "<g>", "<r>", "", "<y>"}
-local tier_names = {"common", "uncommon", "rare", "", "boss"}
+local tier_tokens = {"common", "uncommon", "rare", "", "boss"}
 local scrap_names = {"White", "Green", "Red", "", "Yellow"}
 
 local animation_held_time   = 80
@@ -86,7 +86,10 @@ for printer_type = 1, #spawn_tiers do
         instData.item = item
 
         -- Set prompt text
-        inst.text = "Print "..text_colors[item.tier + 1]..Language.translate_token(item.token_name).." <y>(1 "..tier_names[item.tier + 1].." item)"
+        inst.translation_key = "interactable.printer"
+        inst.text = Language.translate_token(inst.translation_key..".text")
+        inst.text = inst.text:gsub("ITEM", text_colors[item.tier + 1]..Language.translate_token(item.token_name))
+        inst.text = inst.text:gsub("TIER", Language.translate_token("tier."..tier_tokens[item.tier + 1]))
         inst.text_offset_x = -8
         inst.text_offset_y = -20
     end)
