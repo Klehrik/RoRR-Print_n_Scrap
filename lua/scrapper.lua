@@ -38,15 +38,6 @@ Stage.find("ror-hiveCluster"        ):add_interactable(card)
 Stage.find("ror-templeOfTheElders"  ):add_interactable(card)
 
 
-local free_actor = function(actor)
-    -- Reset actor activity
-    actor.activity = 0.0
-    actor.activity_free = true
-    actor.activity_move_factor = 1.0
-    actor.activity_type = 0.0
-end
-
-
 -- Callbacks
 
 obj:onCreate(function(inst)
