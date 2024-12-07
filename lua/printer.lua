@@ -36,7 +36,7 @@ for printer_type = 1, #spawn_tiers do
     -- Create Interactable Card
     local card = Interactable_Card.new("printNScrap", "printer"..printer_type)
     card.object_id = obj
-    card.required_tile_space            = 2.0
+    card.required_tile_space            = 2
     card.spawn_with_sacrifice           = true
     card.spawn_cost                     = spawn_costs[printer_type]
     card.spawn_weight                   = spawn_weights[printer_type]
@@ -96,6 +96,7 @@ for printer_type = 1, #spawn_tiers do
         local instData = inst:get_data()
         local actor = inst.activator
 
+
         -- Draw hovering item
         local frame = gm.variable_global_get("_current_frame")
         draw_item_sprite(instData.item.sprite_id,
@@ -112,12 +113,12 @@ for printer_type = 1, #spawn_tiers do
 
         -- Initial activation
         if inst.active == 2 then
-            -- Check if the user has scrap for this tier
+            -- Check if the actor has scrap for this tier
             local item = Item.find("printNScrap-scrap"..scrap_names[instData.item.tier + 1])
             if item and actor:item_stack_count(item, Item.STACK_KIND.normal) > 0 then
                 instData.taken = item
                 
-            -- Check if the user has a valid item to print with
+            -- Check if the actor has a valid item to print with
             else
                 local items = {}
                 local size = #actor.inventory_item_order
@@ -140,7 +141,7 @@ for printer_type = 1, #spawn_tiers do
 
                 -- Stop printer operation if no valid items
                 if #items <= 0 then
-                    inst.value:sound_play_at(gm.constants.wError, 1.0, 1.0, inst.x, inst.y, 1.0)
+                    inst:sound_play_at(gm.constants.wError, 1.0, 1.0, inst.x, inst.y)
                     inst:set_active(0)
                     return
                 end
@@ -154,7 +155,7 @@ for printer_type = 1, #spawn_tiers do
         
             -- Start printer animation
             instData.animation_time = 0
-            inst.value:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y, 1.0)
+            inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
             inst:set_active(3)
 
         
@@ -194,7 +195,7 @@ for printer_type = 1, #spawn_tiers do
         elseif inst.active == 5 then
             inst.image_speed = 1.0
 
-            if inst.image_index == 10 then inst.value:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1.0, 1.0, inst.x, inst.y, 1.0)
+            if inst.image_index == 10 then inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1.0, 1.0, inst.x, inst.y)
             elseif inst.image_index >= 21 then
                 if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
                 else inst:set_active(6)
