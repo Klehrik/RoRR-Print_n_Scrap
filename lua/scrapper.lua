@@ -111,9 +111,13 @@ obj:onDraw(function(inst)
         -- Start scrapper animation
         instData.animation_time = 0
         inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
-
-        log.info("Scrapping!")
         free_actor(actor)
+        inst:set_active(4)
+
+
+    -- WIP
+    elseif inst.active == 4 then
+        log.info("Scrapping!")
         free_scrapper(inst)
 
     end
