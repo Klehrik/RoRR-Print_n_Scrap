@@ -10,6 +10,14 @@ local hole_input_scale      = 0     -- Item scale when it enters the scrapper
 
 local max_stack = 10    -- Amount of stacks that can be scrapped at once
 
+local scrap_items = {
+    "printNScrap-scrapWhite",
+    "printNScrap-scrapGreen",
+    "printNScrap-scrapRed",
+    "",
+    "printNScrap-scrapYellow"
+}
+
 
 -- Create Object
 local obj = Object.new("printNScrap", "scrapper", Object.PARENT.interactableCrate)
@@ -180,14 +188,7 @@ obj:onDraw(function(inst)
 
     -- Create scrap drop(s) and reset
     elseif inst.active == 7 then
-        local scrap = {
-            "printNScrap-scrapWhite",
-            "printNScrap-scrapGreen",
-            "printNScrap-scrapRed",
-            "",
-            "printNScrap-scrapYellow",
-        }
-        scrap = Item.find(scrap[instData.taken.tier + 1])
+        local scrap = Item.find(scrap_items[instData.taken.tier + 1])
 
         for i = 1, instData.taken_count do
             local created = scrap:create(instData.hole_x, instData.hole_y, inst)
