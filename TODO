@@ -1,2 +1,3 @@
-- Do not proc onInteractableActivate for printer if no item can be printed.
-    - Might have to hook interactable_set_active after all.
+v Do not proc onInteractableActivate for printer if no item can be printed.
+    o Might have to hook interactable_set_active after all.
+v Prevent scrapper from accepting scrap items.

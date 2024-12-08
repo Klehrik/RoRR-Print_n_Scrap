@@ -95,31 +95,6 @@ for printer_type = 1, #spawn_tiers do
     end)
 
 
-    obj:onCheckCost(function(inst, actor, cost, cost_type, can_activate)
-        local instData = inst:get_data()
-
-        -- Check if the actor has at least one valid item
-        local size = #actor.inventory_item_order
-        if size > 0 then
-            for i = 0, size - 1 do
-                local item = Item.wrap(actor.inventory_item_order:get(i))
-
-                -- Valid item if:
-                --      at least one real stack
-                --      the same rarity
-                --      NOT the same item as the printer
-                if  actor:item_stack_count(item, Item.STACK_KIND.normal) > 0
-                and item.tier == instData.item.tier
-                and item.value ~= instData.item.value then
-                    return
-                end
-            end
-        end
-
-        return false
-    end)
-
-
     obj:onDraw(function(inst)
         local instData = inst:get_data()
         local actor = inst.activator
@@ -146,7 +121,7 @@ for printer_type = 1, #spawn_tiers do
             if item and actor:item_stack_count(item, Item.STACK_KIND.normal) > 0 then
                 instData.taken = item
                 
-            -- Pick a random valid item
+            -- Check if the actor has a valid item to print with
             else
                 local items = {}
                 local size = #actor.inventory_item_order
@@ -158,14 +133,23 @@ for printer_type = 1, #spawn_tiers do
                         --      at least one real stack
                         --      the same rarity
                         --      NOT the same item as the printer
-                        if  actor:item_stack_count(item, Item.STACK_KIND.normal) > 0
-                        and item.tier == instData.item.tier
-                        and item.value ~= instData.item.value then
-                            table.insert(items, item)
+                        if actor:item_stack_count(item, Item.STACK_KIND.normal) > 0 then
+                            if  item.tier == instData.item.tier
+                            and item.value ~= instData.item.value then
+                                table.insert(items, item)
+                            end
                         end
                     end
                 end
 
+                -- Stop printer operation if no valid items
+                if #items <= 0 then
+                    inst:sound_play_at(gm.constants.wError, 1.0, 1.0, inst.x, inst.y)
+                    inst:set_active(0)
+                    return
+                end
+    
+                -- Pick a random valid item
                 instData.taken = items[gm.irandom_range(1, #items)]
             end
         
@@ -175,7 +159,7 @@ for printer_type = 1, #spawn_tiers do
             -- Start printer animation
             instData.animation_time = 0
             inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
-            inst.active = 3
+            inst:set_active(3)
 
         
         -- Draw item above player
@@ -189,7 +173,7 @@ for printer_type = 1, #spawn_tiers do
                 instData.taken_x = actor.x
                 instData.taken_y = actor.y - 48
                 instData.taken_scale = 1.0
-                inst.active = 4
+                inst:set_active(4)
             end
 
 
@@ -206,7 +190,7 @@ for printer_type = 1, #spawn_tiers do
 
             if gm.point_distance(instData.taken_x, instData.taken_y, instData.box_x, instData.box_y) < 1 then
                 instData.animation_time = 0
-                inst.active = 5
+                inst:set_active(5)
             end
 
 
@@ -217,7 +201,7 @@ for printer_type = 1, #spawn_tiers do
             if inst.image_index == 10 then inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1.0, 1.0, inst.x, inst.y)
             elseif inst.image_index >= 21 then
                 if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
-                else inst.active = 6
+                else inst:set_active(6)
                 end
             end
 
@@ -229,7 +213,7 @@ for printer_type = 1, #spawn_tiers do
             local created = instData.item:create(instData.box_x, instData.box_y, inst)
             created.is_printed = true
 
-            inst.active = 0
+            inst:set_active(0)
 
         end
     end)

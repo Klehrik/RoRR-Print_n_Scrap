@@ -62,25 +62,6 @@ obj:onCreate(function(inst)
 end)
 
 
-obj:onCheckCost(function(inst, actor, cost, cost_type, can_activate)
-    local instData = inst:get_data()
-
-    -- Check if the actor has any items to scrap
-    local size = #actor.inventory_item_order
-    if size > 0 then
-        for i = 0, size - 1 do
-            local item = Item.wrap(actor.inventory_item_order:get(i))
-
-            if not Helper.table_has(scrap_items, item.namespace.."-"..item.identifier) then
-                return
-            end
-        end
-    end
-
-    return false
-end)
-
-
 obj:onDraw(function(inst)
     local instData = inst:get_data()
     local actor = inst.activator
@@ -95,19 +76,25 @@ obj:onDraw(function(inst)
         if not instData.populate then
             instData.populate = true
 
+            -- Check if the actor has any items to scrap
+            local size = #actor.inventory_item_order
+            if size <= 0 then
+                inst:sound_play_at(gm.constants.wError, 1.0, 1.0, inst.x, inst.y)
+                free_actor(actor)
+                inst.last_move_was_mouse = true
+                inst:set_active(0)
+            end
+
             -- Add items to contents
             local arr = Array.new()
             instData.contents_data = {} -- Extra information
-            local size = #actor.inventory_item_order
             for i = 0, size - 1 do
                 local item = Item.wrap(actor.inventory_item_order:get(i))
-                if not Helper.table_has(scrap_items, item.namespace.."-"..item.identifier) then
-                    arr:push(item.object_id)
-                    table.insert(instData.contents_data, {
-                        item    = item,
-                        count   = actor:item_stack_count(item)
-                    })
-                end
+                arr:push(item.object_id)
+                table.insert(instData.contents_data, {
+                    item    = item,
+                    count   = actor:item_stack_count(item)
+                })
             end
             inst.contents = arr
         end
@@ -115,7 +102,7 @@ obj:onDraw(function(inst)
 
     -- Set active to 3 to ignore default behavior
     elseif inst.active == 2 then
-        inst.active = 3
+        inst:set_active(3)
 
 
     -- Scrapper animation init
@@ -146,7 +133,7 @@ obj:onDraw(function(inst)
         inst.owner = -4
         inst.did_alarm = false
         inst.fade_alpha = 0.0
-        inst.active = 4
+        inst:set_active(4)
 
         
     -- Draw items above player
@@ -164,7 +151,7 @@ obj:onDraw(function(inst)
                 item.x = actor.x + item.x
                 item.y = actor.y + item.y
             end
-            inst.active = 5
+            inst:set_active(5)
         end
 
 
@@ -184,14 +171,14 @@ obj:onDraw(function(inst)
         local item = instData.animation_items[1]
         if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
             instData.animation_time = 0
-            inst.active = 6
+            inst:set_active(6)
         end
 
 
     -- Delay for scrapping sfx
     elseif inst.active == 6 then
         if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
-        else inst.active = 7
+        else inst:set_active(7)
         end
 
         if instData.animation_time == 6 then
@@ -208,7 +195,7 @@ obj:onDraw(function(inst)
             created.is_scrap = true
         end
 
-        inst.active = 0
+        inst:set_active(0)
 
     end
 end)
