@@ -1,5 +1,7 @@
 Adds 3D Printers and Scrappers from Risk of Rain 2.  
 
+Multiplayer will be (re)added at a future date.  
+
 ---
 
 ### Installation Instructions
