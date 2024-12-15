@@ -18,11 +18,16 @@ local box_x_offset          = -18   -- Location of the input box of the printer 
 local box_y_offset          = -22
 local box_input_scale       = 0.4   -- Item scale when it enters the input box
 
-local ban_list = {
+local blacklist = {
     "printNScrap-scrapWhite",
     "printNScrap-scrapGreen",
     "printNScrap-scrapRed",
     "printNScrap-scrapYellow"
+}
+
+local stage_blacklist = {
+    "ror-riskOfRain",
+    "ror-boarBeach"
 }
 
 
@@ -70,14 +75,15 @@ for printer_type = 1, #spawn_tiers do
         --      of the same rarity
         --      not in the item ban list
         --      is actually unlocked (if applicable)
-        local items, item = Item.find_all(printer_tier), nil
+        local item
+        local items = Item.find_all(printer_tier, Item.ARRAY.tier)
         while #items > 0 do
             local pos = gm.irandom_range(1, #items)
             item = items[pos]
 
             if  item.tier == printer_tier
                 and item.namespace and item.identifier
-                and (not Helper.table_has(ban_list, item.namespace.."-"..item.identifier))
+                and (not Helper.table_has(blacklist, item.namespace.."-"..item.identifier))
                 and item:is_unlocked()
             then break end
 
