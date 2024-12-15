@@ -81,7 +81,7 @@ obj:onCheckCost(function(inst, actor, cost, cost_type, can_activate)
 end)
 
 
-obj:onDraw(function(inst)
+obj:onStep(function(inst)
     local instData = inst:get_data()
     local actor = inst.activator
 
@@ -151,12 +151,6 @@ obj:onDraw(function(inst)
         
     -- Draw items above player
     elseif inst.active == 4 then
-        for _, item in ipairs(instData.animation_items) do
-            draw_item_sprite(item.sprite,
-                            actor.x + item.x,
-                            actor.y + item.y)
-        end
-
         if instData.animation_time < animation_held_time then instData.animation_time = instData.animation_time + 1
         else
             -- Turn offsets into absolute positions
@@ -170,17 +164,6 @@ obj:onDraw(function(inst)
 
     -- Slide items towards hole
     elseif inst.active == 5 then
-        for _, item in ipairs(instData.animation_items) do
-            draw_item_sprite(item.sprite,
-                            item.x,
-                            item.y,
-                            Helper.ease_out(item.scale, 3))
-
-            item.x = gm.lerp(item.x, instData.hole_x, 0.1)
-            item.y = gm.lerp(item.y, instData.hole_y, 0.1)
-            item.scale = gm.lerp(item.scale, hole_input_scale, 0.1)
-        end
-
         local item = instData.animation_items[1]
         if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
             instData.animation_time = 0
@@ -209,6 +192,37 @@ obj:onDraw(function(inst)
         end
 
         inst.active = 0
+
+    end
+end)
+
+
+obj:onDraw(function(inst)
+    local instData = inst:get_data()
+    local actor = inst.activator
+
+
+    -- Draw items above player
+    if inst.active == 4 then
+        for _, item in ipairs(instData.animation_items) do
+            draw_item_sprite(item.sprite,
+                            actor.x + item.x,
+                            actor.y + item.y)
+        end
+
+
+    -- Slide items towards hole
+    elseif inst.active == 5 then
+        for _, item in ipairs(instData.animation_items) do
+            draw_item_sprite(item.sprite,
+                            item.x,
+                            item.y,
+                            Helper.ease_out(item.scale, 3))
+
+            item.x = gm.lerp(item.x, instData.hole_x, 0.1)
+            item.y = gm.lerp(item.y, instData.hole_y, 0.1)
+            item.scale = gm.lerp(item.scale, hole_input_scale, 0.1)
+        end
 
     end
 end)

@@ -126,18 +126,10 @@ for printer_type = 1, #spawn_tiers do
     end)
 
 
-    obj:onDraw(function(inst)
+    obj:onStep(function(inst)
         local instData = inst:get_data()
         local actor = inst.activator
 
-
-        -- Draw hovering item
-        local frame = gm.variable_global_get("_current_frame")
-        draw_item_sprite(instData.item.sprite_id,
-                        inst.x + 10,
-                        inst.y - 33 + gm.dsin(frame * 1.333) * 3,
-                        0.8,
-                        0.8 + gm.dsin(frame * 4) * 0.25)
 
         -- Prevent backwards animation looping (after printer reset)
         if inst.image_speed < 0.0 and inst.image_index <= 0 then
@@ -186,10 +178,6 @@ for printer_type = 1, #spawn_tiers do
         
         -- Draw item above player
         elseif inst.active == 3 then
-            draw_item_sprite(instData.taken.sprite_id,
-                            actor.x,
-                            actor.y - 48)
-
             if instData.animation_time < animation_held_time then instData.animation_time = instData.animation_time + 1
             else
                 instData.taken_x = actor.x
@@ -201,11 +189,6 @@ for printer_type = 1, #spawn_tiers do
 
         -- Slide item towards input box
         elseif inst.active == 4 then
-            draw_item_sprite(instData.taken.sprite_id,
-                            instData.taken_x,
-                            instData.taken_y,
-                            instData.taken_scale)
-        
             instData.taken_x = gm.lerp(instData.taken_x, instData.box_x, 0.1)
             instData.taken_y = gm.lerp(instData.taken_y, instData.box_y, 0.1)
             instData.taken_scale = gm.lerp(instData.taken_scale, box_input_scale, 0.1)
@@ -236,6 +219,38 @@ for printer_type = 1, #spawn_tiers do
             created.is_printed = true
 
             inst.active = 0
+
+        end
+    end)
+
+
+    obj:onDraw(function(inst)
+        local instData = inst:get_data()
+        local actor = inst.activator
+
+
+        -- Draw hovering item
+        local frame = gm.variable_global_get("_current_frame")
+        draw_item_sprite(instData.item.sprite_id,
+                        inst.x + 10,
+                        inst.y - 33 + gm.dsin(frame * 1.333) * 3,
+                        0.8,
+                        0.8 + gm.dsin(frame * 4) * 0.25)
+
+        
+        -- Draw item above player
+        if inst.active == 3 then
+            draw_item_sprite(instData.taken.sprite_id,
+                            actor.x,
+                            actor.y - 48)
+
+
+        -- Slide item towards input box
+        elseif inst.active == 4 then
+            draw_item_sprite(instData.taken.sprite_id,
+                            instData.taken_x,
+                            instData.taken_y,
+                            instData.taken_scale)
 
         end
     end)
