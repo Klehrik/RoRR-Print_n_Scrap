@@ -32,10 +32,10 @@ obj.obj_depth   = 1
 -- Create Interactable Card
 local card = Interactable_Card.new("printNScrap", "scrapper")
 card.object_id                      = obj
-card.required_tile_space            = 1
+card.required_tile_space            = 0
 card.spawn_with_sacrifice           = true
 card.spawn_cost                     = 65
-card.spawn_weight                   = 3
+card.spawn_weight                   = 4
 card.default_spawn_rarity_override  = 1
 card.decrease_weight_on_spawn       = true
 
@@ -115,13 +115,15 @@ obj:onStep(function(inst)
         end
 
 
-    -- Set active to 3 to ignore default behavior
-    elseif inst.active == 2 then
-        inst.active = 3
+    -- Set active to 4
+    -- This also gives Better Crates a chance
+    -- to cancel the operation if it's active
+    elseif inst.active == 3 then
+        inst.active = 4
 
 
     -- Scrapper animation init
-    elseif inst.active == 3 then
+    elseif inst.active == 4 then
         -- Get selected item
         local item_data = instData.contents_data[inst.selection + 1]
         instData.taken = item_data.item
@@ -148,11 +150,11 @@ obj:onStep(function(inst)
         inst.owner = -4
         inst.did_alarm = false
         inst.fade_alpha = 0.0
-        inst.active = 4
+        inst.active = 5
 
         
     -- Draw items above player
-    elseif inst.active == 4 then
+    elseif inst.active == 5 then
         if instData.animation_time < animation_held_time then instData.animation_time = instData.animation_time + 1
         else
             -- Turn offsets into absolute positions
@@ -160,23 +162,23 @@ obj:onStep(function(inst)
                 item.x = actor.x + item.x
                 item.y = actor.y + item.y
             end
-            inst.active = 5
-        end
-
-
-    -- Slide items towards hole
-    elseif inst.active == 5 then
-        local item = instData.animation_items[1]
-        if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
-            instData.animation_time = 0
             inst.active = 6
         end
 
 
-    -- Delay for scrapping sfx
+    -- Slide items towards hole
     elseif inst.active == 6 then
+        local item = instData.animation_items[1]
+        if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
+            instData.animation_time = 0
+            inst.active = 7
+        end
+
+
+    -- Delay for scrapping sfx
+    elseif inst.active == 7 then
         if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
-        else inst.active = 7
+        else inst.active = 8
         end
 
         if instData.animation_time == 6 then
@@ -185,7 +187,7 @@ obj:onStep(function(inst)
 
 
     -- Create scrap drop(s) and reset
-    elseif inst.active == 7 then
+    elseif inst.active == 8 then
         local scrap = Item.find(scrap_items[instData.taken.tier + 1])
 
         for i = 1, instData.taken_count do
@@ -205,7 +207,7 @@ obj:onDraw(function(inst)
 
 
     -- Draw items above player
-    if inst.active == 4 then
+    if inst.active == 5 then
         for _, item in ipairs(instData.animation_items) do
             draw_item_sprite(item.sprite,
                             actor.x + item.x,
@@ -214,7 +216,7 @@ obj:onDraw(function(inst)
 
 
     -- Slide items towards hole
-    elseif inst.active == 5 then
+    elseif inst.active == 6 then
         for _, item in ipairs(instData.animation_items) do
             draw_item_sprite(item.sprite,
                             item.x,

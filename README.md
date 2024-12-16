@@ -1,6 +1,6 @@
 Adds 3D Printers and Scrappers from Risk of Rain 2.  
 
-Multiplayer will be (re)added at a future date.  
+Multiplayer support will be (re)added at a future date.  
 **NOTE:** Scrappers _may_ interact weirdly with Better Crates (which is scheduled to be updated at some point).
 
 ---
