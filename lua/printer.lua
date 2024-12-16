@@ -40,7 +40,7 @@ for printer_type = 1, #spawn_tiers do
 
     -- Create Interactable Card
     local card = Interactable_Card.new("printNScrap", "printer"..printer_type)
-    card.object_id = obj
+    card.object_id                      = obj
     card.required_tile_space            = 2
     card.spawn_with_sacrifice           = true
     card.spawn_cost                     = spawn_costs[printer_type]
@@ -48,15 +48,12 @@ for printer_type = 1, #spawn_tiers do
     card.default_spawn_rarity_override  = spawn_rarities[printer_type]
 
     -- Add Interactable Card to stages
-    Stage.find("ror-desolateForest"     ):add_interactable(card)
-    Stage.find("ror-driedLake"          ):add_interactable(card)
-    Stage.find("ror-dampCaverns"        ):add_interactable(card)
-    Stage.find("ror-skyMeadow"          ):add_interactable(card)
-    Stage.find("ror-ancientValley"      ):add_interactable(card)
-    Stage.find("ror-sunkenTombs"        ):add_interactable(card)
-    Stage.find("ror-magmaBarracks"      ):add_interactable(card)
-    Stage.find("ror-hiveCluster"        ):add_interactable(card)
-    Stage.find("ror-templeOfTheElders"  ):add_interactable(card)
+    local stages = Stage.find_all()
+    for _, stage in ipairs(stages) do
+        if not Helper.table_has(stage_blacklist, stage.namespace.."-"..stage.identifier) then
+            stage:add_interactable(card)
+        end
+    end
 
     local printer_tier = spawn_tiers[printer_type]
 

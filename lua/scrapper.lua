@@ -18,6 +18,11 @@ local scrap_items = {
     "printNScrap-scrapYellow"
 }
 
+local stage_blacklist = {
+    "ror-riskOfRain",
+    "ror-boarBeach"
+}
+
 
 -- Create Object
 local obj = Object.new("printNScrap", "scrapper", Object.PARENT.interactableCrate)
@@ -26,7 +31,7 @@ obj.obj_depth   = 1
 
 -- Create Interactable Card
 local card = Interactable_Card.new("printNScrap", "scrapper")
-card.object_id = obj
+card.object_id                      = obj
 card.required_tile_space            = 1
 card.spawn_with_sacrifice           = true
 card.spawn_cost                     = 65
@@ -35,15 +40,12 @@ card.default_spawn_rarity_override  = 1
 card.decrease_weight_on_spawn       = true
 
 -- Add Interactable Card to stages
-Stage.find("ror-desolateForest"     ):add_interactable(card)
-Stage.find("ror-driedLake"          ):add_interactable(card)
-Stage.find("ror-dampCaverns"        ):add_interactable(card)
-Stage.find("ror-skyMeadow"          ):add_interactable(card)
-Stage.find("ror-ancientValley"      ):add_interactable(card)
-Stage.find("ror-sunkenTombs"        ):add_interactable(card)
-Stage.find("ror-magmaBarracks"      ):add_interactable(card)
-Stage.find("ror-hiveCluster"        ):add_interactable(card)
-Stage.find("ror-templeOfTheElders"  ):add_interactable(card)
+local stages = Stage.find_all()
+for _, stage in ipairs(stages) do
+    if not Helper.table_has(stage_blacklist, stage.namespace.."-"..stage.identifier) then
+        stage:add_interactable(card)
+    end
+end
 
 
 -- Callbacks
