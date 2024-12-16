@@ -1,6 +1,6 @@
 ### v1.0.2
 * Now requires Better Crates mod.
-* Increased scrapper spawn weight.
+* Slightly increased scrapper spawn weight.
 
 ### v1.0.1
 * Readded the guaranteed printers on the Contact Light.
