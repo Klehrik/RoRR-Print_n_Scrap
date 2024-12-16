@@ -99,16 +99,13 @@ obj:onStep(function(inst)
 
             -- Add items to contents
             local arr = Array.new()
-            instData.contents_data = {} -- Extra information
+            -- instData.contents_data = {} -- Extra information
             local size = #actor.inventory_item_order
             for i = 0, size - 1 do
                 local item = Item.wrap(actor.inventory_item_order:get(i))
-                if not Helper.table_has(scrap_items, item.namespace.."-"..item.identifier) then
+                if  not Helper.table_has(scrap_items, item.namespace.."-"..item.identifier)
+                and actor:item_stack_count(item, Item.STACK_KIND.normal) > 0 then
                     arr:push(item.object_id)
-                    table.insert(instData.contents_data, {
-                        item    = item,
-                        count   = actor:item_stack_count(item)
-                    })
                 end
             end
             inst.contents = arr
@@ -125,9 +122,9 @@ obj:onStep(function(inst)
     -- Scrapper animation init
     elseif inst.active == 4 then
         -- Get selected item
-        local item_data = instData.contents_data[inst.selection + 1]
-        instData.taken = item_data.item
-        instData.taken_count = math.min(item_data.count, max_stack)
+        local obj_id = inst.contents:get(inst.selection)
+        instData.taken = Item.wrap(GM.object_to_item(obj_id))
+        instData.taken_count = math.min(actor:item_stack_count(instData.taken, Item.STACK_KIND.normal), max_stack)
 
         -- Remove item from inventory
         actor:item_remove(instData.taken, instData.taken_count)
