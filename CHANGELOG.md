@@ -1,3 +1,6 @@
+### v1.1.0
+* Now multiplayer synced.
+
 ### v1.0.2
 * Now requires Better Crates mod.
 * Slightly increased scrapper spawn weight.

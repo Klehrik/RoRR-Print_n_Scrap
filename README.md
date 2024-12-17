@@ -1,6 +1,6 @@
 Adds 3D Printers and Scrappers from Risk of Rain 2.  
 
-Multiplayer support will be (re)added at a future date.  
+Online compatible.  
 
 ---
 
@@ -10,4 +10,4 @@ Join the [Return of Modding server](https://discord.gg/VjS57cszMq) for support.
 
 
 ### Credits
-* **caseyyup** for printer and scrapper sprite bases.
+* **casey (@invenot)** for printer and scrapper sprite bases.
