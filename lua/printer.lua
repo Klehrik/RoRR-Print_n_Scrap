@@ -31,6 +31,39 @@ local stage_blacklist = {
 }
 
 
+local packetCreate = Packet.new()
+packetCreate:onReceived(function(message, player)
+    local inst = message:read_instance()
+    local item = Item.wrap(message:read_uint())
+
+    local instData = inst:get_data()
+    instData.item = item
+
+    -- Set prompt text
+    inst.translation_key = "interactable.printer"
+    inst.text = Language.translate_token(inst.translation_key..".text")
+    inst.text = inst.text:gsub("ITEM", text_colors[item.tier + 1]..Language.translate_token(item.token_name))
+    inst.text = inst.text:gsub("TIER", Language.translate_token("tier."..tier_tokens[item.tier + 1]))
+
+    instData.setup = true
+end)
+
+
+local packetUse = Packet.new()
+packetUse:onReceived(function(message, player)
+    local inst = message:read_instance()
+    local taken = Item.wrap(message:read_uint())
+
+    local instData = inst:get_data()
+    instData.taken = taken
+
+    -- Start printer animation
+    instData.animation_time = 0
+    inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
+    inst.active = 3
+end)
+
+
 for printer_type = 1, #spawn_tiers do
 
     -- Create Object
@@ -67,6 +100,13 @@ for printer_type = 1, #spawn_tiers do
         instData.box_x = inst.x + box_x_offset
         instData.box_y = inst.y + box_y_offset
 
+        -- Set prompt text offset
+        inst.text_offset_x = -8
+        inst.text_offset_y = -20
+
+        if Net.get_type() == Net.TYPE.client then return end
+        instData.setup = true
+
         -- Pick printer item
         -- Make sure that the item is:
         --      of the same rarity
@@ -93,8 +133,6 @@ for printer_type = 1, #spawn_tiers do
         inst.text = Language.translate_token(inst.translation_key..".text")
         inst.text = inst.text:gsub("ITEM", text_colors[item.tier + 1]..Language.translate_token(item.token_name))
         inst.text = inst.text:gsub("TIER", Language.translate_token("tier."..tier_tokens[item.tier + 1]))
-        inst.text_offset_x = -8
-        inst.text_offset_y = -20
     end)
 
 
@@ -128,6 +166,17 @@ for printer_type = 1, #spawn_tiers do
         local actor = inst.activator
 
 
+        -- [Host]  Send sync info to clients
+        -- (Instance creation is not yet synced onCreate)
+        if not instData.sent_sync and Net.get_type() == Net.TYPE.host then
+            local message = packetCreate:message_begin()
+            message:write_instance(inst)
+            message:write_uint(instData.item)
+            message:send_to_all()
+        end
+        instData.sent_sync = true
+
+
         -- Prevent backwards animation looping (after printer reset)
         if inst.image_speed < 0.0 and inst.image_index <= 0 then
             inst.image_speed = 0.0
@@ -136,6 +185,8 @@ for printer_type = 1, #spawn_tiers do
 
         -- Initial activation
         if inst.active == 2 then
+            if Net.get_type() == Net.TYPE.client then inst.active = 21 end
+
             -- Check if the actor has scrap for this tier
             local item = Item.find("printNScrap-scrap"..scrap_names[instData.item.tier + 1])
             if item and actor:item_stack_count(item, Item.STACK_KIND.normal) > 0 then
@@ -171,6 +222,12 @@ for printer_type = 1, #spawn_tiers do
             instData.animation_time = 0
             inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
             inst.active = 3
+
+            -- [Host]  Send sync info to clients
+            local message = packetUse:message_begin()
+            message:write_instance(inst)
+            message:write_uint(instData.taken)
+            message:send_to_all()
 
         
         -- Draw item above player
@@ -224,6 +281,8 @@ for printer_type = 1, #spawn_tiers do
     obj:onDraw(function(inst)
         local instData = inst:get_data()
         local actor = inst.activator
+
+        if not instData.setup then return end
 
 
         -- Draw hovering item
