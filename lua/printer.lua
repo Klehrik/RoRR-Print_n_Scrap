@@ -187,6 +187,7 @@ for printer_type = 1, #spawn_tiers do
 
         -- Initial activation
         if inst.active == 2 then
+            -- [Client]  Wait for packet from host
             if Net.get_type() == Net.TYPE.client then inst.active = 21 end
 
             -- Check if the actor has scrap for this tier
