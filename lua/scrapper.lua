@@ -99,7 +99,6 @@ obj:onStep(function(inst)
 
             -- Add items to contents
             local arr = Array.new()
-            -- instData.contents_data = {} -- Extra information
             local size = #actor.inventory_item_order
             for i = 0, size - 1 do
                 local item = Item.wrap(actor.inventory_item_order:get(i))
@@ -109,6 +108,8 @@ obj:onStep(function(inst)
                 end
             end
             inst.contents = arr
+
+            Helper.sync_crate_contents(inst)
         end
 
 
@@ -119,8 +120,12 @@ obj:onStep(function(inst)
         inst.active = 4
 
 
-    -- Scrapper animation init
+    -- Initial activation
     elseif inst.active == 4 then
+        -- [Client]  Wait for packet from host
+        if Net.get_type() == Net.TYPE.client then inst.active = 21 end
+        -- TODO: copy from printer.lua
+
         -- Get selected item
         local obj_id = inst.contents:get(inst.selection)
         instData.taken = Item.wrap(GM.object_to_item(obj_id))
