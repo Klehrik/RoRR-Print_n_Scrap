@@ -31,6 +31,7 @@ local stage_blacklist = {
 }
 
 
+-- Packets
 local packetCreate = Packet.new()
 packetCreate:onReceived(function(message, player)
     local inst = message:read_instance()
@@ -64,6 +65,7 @@ packetUse:onReceived(function(message, player)
 end)
 
 
+-- Create printers
 for printer_type = 1, #spawn_tiers do
 
     -- Create Object
