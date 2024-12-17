@@ -227,10 +227,12 @@ for printer_type = 1, #spawn_tiers do
             inst.active = 3
 
             -- [Host]  Send sync info to clients
-            local message = packetUse:message_begin()
-            message:write_instance(inst)
-            message:write_uint(instData.taken)
-            message:send_to_all()
+            if Net.get_type() == Net.TYPE.host then
+                local message = packetUse:message_begin()
+                message:write_instance(inst)
+                message:write_uint(instData.taken)
+                message:send_to_all()
+            end
 
         
         -- Draw item above player
