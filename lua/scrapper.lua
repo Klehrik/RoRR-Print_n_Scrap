@@ -48,6 +48,32 @@ for _, stage in ipairs(stages) do
 end
 
 
+-- Packet
+local packetUse = Packet.new()
+packetUse:onReceived(function(message, player)
+    local inst = message:read_instance()
+    local taken = Item.wrap(message:read_ushort())
+    local taken_count = message:read_ushort()
+
+    local instData = inst:get_data()
+    instData.taken = taken
+    instData.taken_count = taken_count
+
+    -- Start scrapper animation
+    for i = 1, instData.taken_count do
+        -- x and y are offsets from the actor's position here
+        table.insert(instData.animation_items, {
+            sprite  = instData.taken.sprite_id,
+            x       = ((instData.taken_count - 1) * -17) + ((i - 1) * 34),
+            y       = -48,
+            scale   = 1.0
+        })
+    end
+    inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
+    inst.active = 4
+end)
+
+
 -- Callbacks
 
 obj:onCreate(function(inst)
@@ -90,6 +116,8 @@ obj:onStep(function(inst)
 
     if inst.active == 0 then
         instData.populate = false
+        instData.animation_time = 0
+        instData.animation_items = {}
 
 
     -- Initial activation (opened item picker UI)
@@ -108,23 +136,20 @@ obj:onStep(function(inst)
                 end
             end
             inst.contents = arr
-
-            Helper.sync_crate_contents(inst)
         end
 
 
-    -- Set active to 4
-    -- This also gives Better Crates a chance
-    -- to cancel the operation if it's active
+    -- Item selected
     elseif inst.active == 3 then
-        inst.active = 4
+        free_actor(actor)
+        inst.last_move_was_mouse = true
+        inst.owner = -4
 
-
-    -- Initial activation
-    elseif inst.active == 4 then
         -- [Client]  Wait for packet from host
-        if Net.get_type() == Net.TYPE.client then inst.active = 21 end
-        -- TODO: copy from printer.lua
+        if Net.is_client() then
+            inst.active = waiting_active
+            return
+        end
 
         -- Get selected item
         local obj_id = inst.contents:get(inst.selection)
@@ -135,8 +160,6 @@ obj:onStep(function(inst)
         actor:item_remove(instData.taken, instData.taken_count)
         
         -- Start scrapper animation
-        instData.animation_time = 0
-        instData.animation_items = {}
         for i = 1, instData.taken_count do
             -- x and y are offsets from the actor's position here
             table.insert(instData.animation_items, {
@@ -147,16 +170,22 @@ obj:onStep(function(inst)
             })
         end
         inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
-        free_actor(actor)
-        inst.last_move_was_mouse = true
-        inst.owner = -4
-        inst.did_alarm = false
-        inst.fade_alpha = 0.0
-        inst.active = 5
+        inst.active = 4
+
+        -- [Host]  Send sync info to clients
+        if Net.is_host() then
+            Alarm.create(function()
+                local message = packetUse:message_begin()
+                message:write_instance(inst)
+                message:write_ushort(instData.taken)
+                message:write_ushort(instData.taken_count)
+                message:send_to_all()
+            end, 1)
+        end
 
         
     -- Draw items above player
-    elseif inst.active == 5 then
+    elseif inst.active == 4 then
         if instData.animation_time < animation_held_time then instData.animation_time = instData.animation_time + 1
         else
             -- Turn offsets into absolute positions
@@ -164,23 +193,23 @@ obj:onStep(function(inst)
                 item.x = actor.x + item.x
                 item.y = actor.y + item.y
             end
-            inst.active = 6
+            inst.active = 5
         end
 
 
     -- Slide items towards hole
-    elseif inst.active == 6 then
+    elseif inst.active == 5 then
         local item = instData.animation_items[1]
         if gm.point_distance(item.x, item.y, instData.hole_x, instData.hole_y) < 1 then
             instData.animation_time = 0
-            inst.active = 7
+            inst.active = 6
         end
 
 
     -- Delay for scrapping sfx
-    elseif inst.active == 7 then
+    elseif inst.active == 6 then
         if instData.animation_time < animation_print_time then instData.animation_time = instData.animation_time + 1
-        else inst.active = 8
+        else inst.active = 7
         end
 
         if instData.animation_time == 6 then
@@ -189,7 +218,7 @@ obj:onStep(function(inst)
 
 
     -- Create scrap drop(s) and reset
-    elseif inst.active == 8 then
+    elseif inst.active == 7 then
         local scrap = Item.find(scrap_items[instData.taken.tier + 1])
 
         for i = 1, instData.taken_count do
@@ -209,7 +238,7 @@ obj:onDraw(function(inst)
 
 
     -- Draw items above player
-    if inst.active == 5 then
+    if inst.active == 4 then
         for _, item in ipairs(instData.animation_items) do
             draw_item_sprite(item.sprite,
                             actor.x + item.x,
@@ -218,7 +247,7 @@ obj:onDraw(function(inst)
 
 
     -- Slide items towards hole
-    elseif inst.active == 6 then
+    elseif inst.active == 5 then
         for _, item in ipairs(instData.animation_items) do
             draw_item_sprite(item.sprite,
                             item.x,

@@ -6,6 +6,12 @@ mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto(true)
 
 PATH = _ENV["!plugins_mod_folder_path"].."/"
 
+waiting_active = 628    -- random number
+
+-- Note on Alarm usage:
+-- Have to delay packet sending by 1 frame because the packet is sometimes
+-- instantaneous (at least with self-testing) and runs BEFORE other stuff
+
 
 
 -- ========== Main ==========

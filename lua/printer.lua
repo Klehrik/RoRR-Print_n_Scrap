@@ -35,7 +35,7 @@ local stage_blacklist = {
 local packetCreate = Packet.new()
 packetCreate:onReceived(function(message, player)
     local inst = message:read_instance()
-    local item = Item.wrap(message:read_uint())
+    local item = Item.wrap(message:read_ushort())
 
     local instData = inst:get_data()
     instData.item = item
@@ -53,7 +53,7 @@ end)
 local packetUse = Packet.new()
 packetUse:onReceived(function(message, player)
     local inst = message:read_instance()
-    local taken = Item.wrap(message:read_uint())
+    local taken = Item.wrap(message:read_ushort())
 
     local instData = inst:get_data()
     instData.taken = taken
@@ -106,7 +106,7 @@ for printer_type = 1, #spawn_tiers do
         inst.text_offset_x = -8
         inst.text_offset_y = -20
 
-        if Net.get_type() == Net.TYPE.client then return end
+        if Net.is_client() then return end
         instData.setup = true
 
         -- Pick printer item
@@ -170,10 +170,10 @@ for printer_type = 1, #spawn_tiers do
 
         -- [Host]  Send sync info to clients
         -- (Instance creation is not yet synced onCreate)
-        if not instData.sent_sync and Net.get_type() == Net.TYPE.host then
+        if not instData.sent_sync and Net.is_host() then
             local message = packetCreate:message_begin()
             message:write_instance(inst)
-            message:write_uint(instData.item)
+            message:write_ushort(instData.item)
             message:send_to_all()
         end
         instData.sent_sync = true
@@ -188,7 +188,10 @@ for printer_type = 1, #spawn_tiers do
         -- Initial activation
         if inst.active == 2 then
             -- [Client]  Wait for packet from host
-            if Net.get_type() == Net.TYPE.client then inst.active = 21 end
+            if Net.is_client() then
+                inst.active = waiting_active
+                return
+            end
 
             -- Check if the actor has scrap for this tier
             local item = Item.find("printNScrap-scrap"..scrap_names[instData.item.tier + 1])
@@ -227,10 +230,10 @@ for printer_type = 1, #spawn_tiers do
             inst.active = 3
 
             -- [Host]  Send sync info to clients
-            if Net.get_type() == Net.TYPE.host then
+            if Net.is_host() then
                 local message = packetUse:message_begin()
                 message:write_instance(inst)
-                message:write_uint(instData.taken)
+                message:write_ushort(instData.taken)
                 message:send_to_all()
             end
 
