@@ -1,0 +1,40 @@
+return {
+    interactable = {
+        printer = {
+            text = "Print %s <y>(1 %s item)"
+        },
+        scrapper = {
+            text = "Use scrapper"
+        }
+    },
+
+    item = {
+        scrapWhite = {
+            name        = "Item Scrap (White)",
+            pickup      = "Does nothing. Prioritized when using printers.",
+            description = "Does nothing. Prioritized when using printers."
+        },
+        scrapGreen = {
+            name        = "Item Scrap (Green)",
+            pickup      = "Does nothing. Prioritized when using printers.",
+            description = "Does nothing. Prioritized when using printers."
+        },
+        scrapRed = {
+            name        = "Item Scrap (Red)",
+            pickup      = "Does nothing. Prioritized when using printers.",
+            description = "Does nothing. Prioritized when using printers."
+        },
+        scrapYellow = {
+            name        = "Item Scrap (Yellow)",
+            pickup      = "Does nothing. Prioritized when using printers.",
+            description = "Does nothing. Prioritized when using printers."
+        }
+    },
+
+    tier = {
+        common      = "common",
+        uncommon    = "uncommon",
+        rare        = "rare",
+        boss        = "boss"
+    }
+}

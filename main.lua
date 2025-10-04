@@ -1,36 +1,47 @@
--- Print n Scrap
--- Klehrik
+-- Print 'n' Scrap
 
-mods["MGReturns-ENVY"].auto()
-mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto(true)
+mods["LuaENVY-ENVY"].auto()
+mods["ReturnsAPI-ReturnsAPI"].auto{
+    namespace = "printNScrap"
+}
 
-PATH = _ENV["!plugins_mod_folder_path"].."/"
+interactable_cards = {}
 
-waiting_active = 628    -- random number
+local stage_blacklist = {
+    "ror-riskOfRain",
+    "ror-boarBeach"
+}
 
--- Note on Alarm usage:
--- Have to delay packet sending by 1 frame because the packet is sometimes
--- instantaneous (at least with self-testing) and runs BEFORE other stuff
+local function init()
+    hotloaded = true
+    require("./core/helper")
+    require("./core/printer")
+    require("./core/scrapper")
+    require("./core/scrap")
+end
 
-
-
--- ========== Main ==========
-
-Initialize(function()
-    require("./lua/helper")
-    require("./lua/printer")
-    require("./lua/scrapper")
-    require("./lua/scrap")
-end)
-
-
-Callback.add("onStageStart", "printNScrap-onStageStart", function()
-    -- Create guaranteed printers in the Contact Light's Cabin room
-    local stage = Stage.wrap(gm.variable_global_get("stage_id"))
-    local nsid = stage.namespace.."-"..stage.identifier
-    if nsid == "ror-riskOfRain" then
-        for r = 0, 2 do
-            Object.find("printNScrap-printer"..(r + 1)):create(7650 + (160 * r), 3264)
+local function add_to_stages()
+    -- Add InteractableCards to stages
+    -- Runs with delayed priority to account for custom stages
+    for _, card in ipairs(interactable_cards) do
+        
+        for id = 0, #Class.Stage - 1 do
+            local stage = Stage.wrap(id)
+            if not Util.table_has(stage_blacklist, stage.namespace.."-"..stage.identifier) then
+                stage:add_interactable(card)
+                -- print("Added '"..card.identifier.."' to stage '"..stage.identifier.."'")
+            end
         end
     end
-end, true)
+
+    -- Add guaranteed printers in the Contact Light's Cabin room
+    -- TODO
+end
+
+Initialize.add(init)
+Initialize.add(Callback.Priority.AFTER, add_to_stages)
+
+if hotloaded then
+    init()
+    add_to_stages()
+end

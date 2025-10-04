@@ -1,11 +1,12 @@
 ﻿{
 	"name": "Print_n_Scrap",
-	"version_number": "1.1.1",
+	"version_number": "1.1.0",
 	"website_url": "https://github.com/Klehrik/RoRR-Print_n_Scrap",
 	"description": "Adds 3D Printers and Scrappers from Risk of Rain 2.",
 	"dependencies": [
-		"ReturnOfModding-ReturnOfModding-1.1.4",
-		"ReturnsAPI-ReturnsAPI-1.0.0",
-		"LuaENVY-ENVY-1.2.0"
+		"ReturnOfModding-ReturnOfModding-1.0.55",
+		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.2",
+		"MGReturns-ENVY-1.1.1",
+		"Klehrik-Better_Crates-1.1.0"
 	]
 }
