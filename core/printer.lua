@@ -76,14 +76,14 @@ packetUse:set_serializers(
 
         -- Start printer animation
         inst_data.animation_time = 0
-        inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
+        inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1, 1, inst.x, inst.y)
         inst.active = 3
     end
 )
 
 
 
--- ========== Create printers ==========
+-- ========== Objects ==========
 
 for printer_index, tier in ipairs(spawn_tiers) do
 
@@ -132,6 +132,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
 
             if  item.namespace and item.identifier
                 and (not Util.table_has(item_blacklist, item.namespace.."-"..item.identifier))
+                -- TODO
                 -- and item:is_unlocked()
             then break end
 
@@ -149,10 +150,40 @@ for printer_index, tier in ipairs(spawn_tiers) do
     end)
 
 
+    Hook.add_post(gm.constants.interactable_check_cost, function(self, other, result, args)
+        if self:get_object_index() ~= obj.value then return end
+
+        local inst_data = Instance.get_data(self)
+        local actor = args[3].value
+
+        -- Check if the actor has at least one valid item
+        local size = #actor.inventory_item_order
+        if size > 0 then
+            for i = 0, size - 1 do
+                local item = Item.wrap(actor.inventory_item_order:get(i))
+
+                -- Valid item if:
+                --      at least one real stack
+                --      the same rarity
+                --      NOT the same item as the printer
+                if  actor:item_count(item, Item.StackKind.NORMAL) > 0
+                and item.tier == tier
+                and item.value ~= inst_data.item.value then
+                    return
+                end
+            end
+        end
+        
+        -- If not, prevent usage
+        result.value = false
+    end)
+
+
     Callback.add(obj.on_step, function(inst)
         local inst_data = Instance.get_data(inst)
         local actor = inst.activator
         
+
         -- [Host]  Send sync info to clients
         -- (Instance creation is not yet synced on_create)
         if (not inst_data.sent_sync) and Net.host then
@@ -203,7 +234,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
                 inst_data.taken = items[math.floor(math.randomf(1, #items + 1))]
             end
         
-            -- Remove item from inventory
+            -- Take item from inventory
             actor:item_take(inst_data.taken)
         
             -- Start printer animation
@@ -244,7 +275,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
         elseif inst.active == 5 then
             inst.image_speed = 1.0
 
-            if inst.image_index == 10 then inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1.0, 1.0, inst.x, inst.y)
+            if inst.image_index == 10 then inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1, 1, inst.x, inst.y)
             elseif inst.image_index >= 21 then
                 if inst_data.animation_time < animation_print_time then inst_data.animation_time = inst_data.animation_time + 1
                 else inst.active = 6

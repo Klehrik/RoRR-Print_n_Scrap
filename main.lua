@@ -2,7 +2,8 @@
 
 mods["LuaENVY-ENVY"].auto()
 mods["ReturnsAPI-ReturnsAPI"].auto{
-    namespace = "printNScrap"
+    namespace   = "printNScrap",
+    mp          = true
 }
 
 interactable_cards = {}
