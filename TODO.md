@@ -1,0 +1,2 @@
+- Prevent printer spawning when Command is on (scrapper is fine)
+- Add unlock checking

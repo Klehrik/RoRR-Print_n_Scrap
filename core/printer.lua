@@ -32,7 +32,7 @@ local item_blacklist = {
 -- ========== Packets ==========
 
 -- Sync printer setup with clients
-local packetCreate = Packet.new()
+local packetCreate = Packet.new("printerCreate")
 packetCreate:set_serializers(
     function(buffer, inst, item)
         buffer:write_instance(inst)
@@ -60,7 +60,7 @@ packetCreate:set_serializers(
 
 
 -- Sync printer use with clients
-local packetUse = Packet.new()
+local packetUse = Packet.new("printerUse")
 packetUse:set_serializers(
     function(buffer, inst, taken)
         buffer:write_instance(inst)
@@ -107,10 +107,6 @@ for printer_index, tier in ipairs(spawn_tiers) do
 
     Callback.add(obj.on_create, function(inst)
         local inst_data = Instance.get_data(inst)
-
-        -- Item entry location
-        inst_data.box_x = inst.x + box_offset_x
-        inst_data.box_y = inst.y + box_offset_y
 
         -- Set prompt text offset
         inst.text_offset_x = text_offset_x
@@ -182,6 +178,10 @@ for printer_index, tier in ipairs(spawn_tiers) do
     Callback.add(obj.on_step, function(inst)
         local inst_data = Instance.get_data(inst)
         local actor = inst.activator
+
+        -- Set item entry location
+        inst_data.box_x = inst.x + box_offset_x
+        inst_data.box_y = inst.y + box_offset_y
         
 
         -- [Host]  Send sync info to clients

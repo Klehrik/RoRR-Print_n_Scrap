@@ -9,7 +9,7 @@ local spawn_rarity          = 1
 local animation_held_time   = 80
 local animation_print_time  = 38
 local hole_x_offset         = 0     -- Location of the hole of the scrapper relative to the origin
-local hole_y_offset         = -14
+local hole_y_offset         = -26
 local hole_input_scale      = 0     -- Item scale when it enters the scrapper
 
 local max_stack = 10    -- Amount of stacks that can be scrapped at once
@@ -34,7 +34,7 @@ local scrap_items_identifiers = {
 -- ========== Packets ==========
 
 -- Sync scrapper use with clients
-local packetUse = Packet.new()
+local packetUse = Packet.new("scrapperUse")
 packetUse:set_serializers(
     function(buffer, inst, taken, count)
         buffer:write_instance(inst)
@@ -92,11 +92,6 @@ table.insert(interactable_cards, card)
 Callback.add(obj.on_create, function(inst)
     inst.is_scrapper = true     -- Flag for other crate-related mods
 
-    -- Item entry location
-    local inst_data = Instance.get_data(inst)
-    inst_data.hole_x = inst.x + hole_x_offset
-    inst_data.hole_y = inst.y + hole_y_offset
-
     -- Set prompt text
     inst.translation_key = "interactable.scrapper"
     inst.text = gm.translate(inst.translation_key..".text")
@@ -130,6 +125,10 @@ end)
 Callback.add(obj.on_step, function(inst)
     local inst_data = Instance.get_data(inst)
     local actor = inst.activator
+
+    -- Set item entry location
+    inst_data.hole_x = inst.x + hole_x_offset
+    inst_data.hole_y = inst.y + hole_y_offset
 
 
     if inst.active == 0 then
