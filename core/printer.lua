@@ -2,16 +2,6 @@
 
 local sPrinter = Sprite.new("printer", "~/sprites/printer.png", 23, 36, 48)
 
-local spawn_tiers     = {ItemTier.COMMON, ItemTier.UNCOMMON, ItemTier.RARE, ItemTier.BOSS}
-local spawn_costs     = {65, 75, 140, 140}    -- Small chest is 50, large chest is 110, and basic shrine is 65
-local spawn_weights   = {6, 3, 1, 1}          -- Small/large chests and basic shrines are 8
-local spawn_rarities  = {1, 1, 4, 4}          -- Small/large chests are 1, and drone upgraders/recyclers are 4
-
-local item_colors = {Color.Item.WHITE, Color.Item.GREEN, Color.Item.RED, 0, Color.Item.YELLOW}
-local text_colors = {"", "<g>", "<r>", "", "<y>"}
-local tier_tokens = {"common", "uncommon", "rare", "", "boss"}
-local scrap_names = {"White", "Green", "Red", "", "Yellow"}
-
 local animation_held_time   = 80
 local animation_print_time  = 32
 local box_offset_x          = -18   -- Location of the input box of the printer relative to the origin
@@ -20,12 +10,9 @@ local box_input_scale       = 0.4   -- Item scale when it enters the input box
 local text_offset_x         = -8    -- Location of the button prompt text
 local text_offset_y         = -20
 
-local item_blacklist = {
-    "printNScrap-scrapWhite",
-    "printNScrap-scrapGreen",
-    "printNScrap-scrapRed",
-    "printNScrap-scrapYellow"
-}
+__properties = {}
+__scrap_items = {}
+__scrap_items_by_tier = {}
 
 
 
@@ -34,14 +21,16 @@ local item_blacklist = {
 -- Sync printer setup with clients
 local packetCreate = Packet.new("printerCreate")
 packetCreate:set_serializers(
-    function(buffer, inst, item)
+    function(buffer, inst, item, tier_token)
         buffer:write_instance(inst)
         buffer:write_ushort(item)
+        buffer:write_string(tier_token)
     end,
 
     function(buffer, player)
         local inst = buffer:read_instance()
         local item = Item.wrap(buffer:read_ushort())
+        local tier_token = buffer:read_string()
 
         local inst_data = Instance.get_data(inst)
         inst_data.item = item
@@ -50,8 +39,8 @@ packetCreate:set_serializers(
         inst.translation_key = "interactable.printer"
         inst.text = gm.translate(
             inst.translation_key..".text",
-            text_colors[item.tier + 1]..gm.translate(item.token_name),
-            gm.translate("tier."..tier_tokens[item.tier + 1])
+            "<"..ItemTier.wrap(item.tier).text_color:sub(2, -2)..">"..gm.translate(item.token_name),
+            gm.translate(tier_token)
         )
 
         inst_data.setup = true
@@ -83,27 +72,69 @@ packetUse:set_serializers(
 
 
 
--- ========== Objects ==========
+-- ========== Static Methods ==========
 
-for printer_index, tier in ipairs(spawn_tiers) do
+--[[
+Property        Default
+--------        -------
+tier            ItemTier.COMMON
+cost            65
+weight          6
+rarity          1
+tier_token      "tier.common"
+scrap_sprite    nil
+]]
+PnS.new = function(properties)
+    if not properties               then log.error("No properties table provided", 2) end
+    if not Initialize.has_started() then log.error("ReturnsAPI initialization loop has not started yet", 2) end
+
+    local already_added = __properties[tier]
+
+    -- Create stored properties table for tier, or merge with existing
+    local tier = Wrap.unwrap(properties.tier) or ItemTier.COMMON
+
+    __properties[tier] = __properties[tier] or {}
+    __properties[tier] = {
+        tier            = tier,
+        cost            = properties.cost           or __properties[tier].cost          or 65,
+        weight          = properties.weight         or __properties[tier].weight        or 6,
+        rarity          = properties.rarity         or __properties[tier].rarity        or 1,
+        tier_token      = properties.tier_token     or __properties[tier].tier_token    or "tier.common",
+        scrap_sprite    = properties.scrap_sprite   or __properties[tier].scrap_sprite
+    }
 
     -- Create Object
-    local obj = Object.new("printer"..printer_index, Object.Parent.INTERACTABLE)
+    local obj = Object.new("printer"..tier, Object.Parent.INTERACTABLE)
     obj:set_sprite(sPrinter)
     obj:set_depth(1)
 
     -- Create Interactable Card
-    local card = InteractableCard.new("printer"..printer_index)
+    local card = InteractableCard.new("printer"..tier)
     card.object_id                      = obj
     card.required_tile_space            = 2
     card.spawn_with_sacrifice           = true
-    card.spawn_cost                     = spawn_costs[printer_index]
-    card.spawn_weight                   = spawn_weights[printer_index]
-    card.default_spawn_rarity_override  = spawn_rarities[printer_index]
-    table.insert(interactable_cards, card)
+    card.spawn_cost                     = __properties[tier].cost
+    card.spawn_weight                   = __properties[tier].weight
+    card.default_spawn_rarity_override  = __properties[tier].rarity
 
+    -- Create scrap
+    local scrap
+    if __properties[tier].scrap_sprite then
+        scrap = Item.new("scrap"..tier)
+        scrap:set_sprite(__properties[tier].scrap_sprite)
+        scrap:set_tier(tier)
+
+        -- Remove from loot pool
+        LootPool.wrap(ItemTier.wrap(tier).item_pool_for_reroll):remove_item(scrap)
+
+        __scrap_items[scrap.value]  = scrap
+        __scrap_items_by_tier[tier] = scrap
+    end
 
     -- Callbacks
+    if already_added then
+        return card
+    end
 
     Callback.add(obj.on_create, function(inst)
         local inst_data = Instance.get_data(inst)
@@ -119,6 +150,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
         -- Make sure that the item is:
         --      of the same rarity
         --      not in the item ban list
+        --      is in a loot pool
         --      is actually unlocked (if applicable)
         local item
         local items = Item.find_all(tier, Item.Property.TIER)
@@ -127,9 +159,10 @@ for printer_index, tier in ipairs(spawn_tiers) do
             item = items[pos]
 
             if  item.namespace and item.identifier
-                and (not Util.table_has(item_blacklist, item.namespace.."-"..item.identifier))
-                -- TODO
-                -- and item:is_unlocked()
+            and (not __scrap_items[item.value])
+            and (not item_blacklist[item.value])
+            and item:is_loot()
+            and item:get_achievement():is_unlocked_any()
             then break end
 
             table.remove(items, pos)
@@ -140,8 +173,8 @@ for printer_index, tier in ipairs(spawn_tiers) do
         inst.translation_key = "interactable.printer"
         inst.text = gm.translate(
             inst.translation_key..".text",
-            text_colors[item.tier + 1]..gm.translate(item.token_name),
-            gm.translate("tier."..tier_tokens[item.tier + 1])
+            "<"..ItemTier.wrap(tier).text_color..">"..gm.translate(item.token_name),
+            gm.translate(__properties[tier].tier_token)
         )
     end)
 
@@ -187,7 +220,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
         -- [Host]  Send sync info to clients
         -- (Instance creation is not yet synced on_create)
         if (not inst_data.sent_sync) and Net.host then
-            packetCreate:send_to_all(inst, inst_data.item)
+            packetCreate:send_to_all(inst, inst_data.item, __properties[tier].tier_token)
         end
         inst_data.sent_sync = true
 
@@ -207,9 +240,8 @@ for printer_index, tier in ipairs(spawn_tiers) do
             end
 
             -- Check if the actor has scrap for this tier
-            local item = Item.find("scrap"..scrap_names[tier + 1])
-            if item and actor:item_count(item, Item.StackKind.NORMAL) > 0 then
-                inst_data.taken = item
+            if scrap and (actor:item_count(scrap, Item.StackKind.NORMAL) > 0) then
+                inst_data.taken = scrap
                 
             -- Pick a random valid item
             else
@@ -239,7 +271,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
         
             -- Start printer animation
             inst_data.animation_time = 0
-            inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1.0, 1.0, inst.x, inst.y)
+            inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1, 1, inst.x, inst.y)
             inst.active = 3
 
             -- [Host]  Send sync info to clients
@@ -254,7 +286,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
             else
                 inst_data.taken_x = actor.x
                 inst_data.taken_y = actor.y - 48
-                inst_data.taken_scale = 1.0
+                inst_data.taken_scale = 1
                 inst.active = 4
             end
 
@@ -273,7 +305,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
 
         -- Close box for a bit
         elseif inst.active == 5 then
-            inst.image_speed = 1.0
+            inst.image_speed = 1
 
             if inst.image_index == 10 then inst:sound_play_at(gm.constants.wDroneRecycler_Recycling, 1, 1, inst.x, inst.y)
             elseif inst.image_index >= 21 then
@@ -285,7 +317,7 @@ for printer_index, tier in ipairs(spawn_tiers) do
 
         -- Create item drop and reset
         elseif inst.active == 6 then
-            inst.image_speed = -1.0
+            inst.image_speed = -1
 
             local created = inst_data.item:create(inst_data.box_x, inst_data.box_y, inst)
             created.is_printed = true
@@ -325,5 +357,8 @@ for printer_index, tier in ipairs(spawn_tiers) do
 
         end
     end)
+    
 
+    table.insert(printer_cards, card)
+    return card
 end

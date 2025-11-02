@@ -1,48 +1,26 @@
 -- Print 'n' Scrap
 
 mods["LuaENVY-ENVY"].auto()
+envy = mods["LuaENVY-ENVY"]
+
 mods["ReturnsAPI-ReturnsAPI"].auto{
     namespace   = "printNScrap",
     mp          = true
 }
 
-interactable_cards = {}
+PnS = {}
 
-local stage_blacklist = {
-    "ror-riskOfRain",
-    "ror-boarBeach"
-}
-
-local function init()
-    hotloaded = true
+-- Require core files
+Initialize.add(Callback.Priority.BEFORE, function()
     require("./core/helper")
     require("./core/printer")
     require("./core/scrapper")
-    require("./core/scrap")
-end
+    require("./core/wrapper")
+    require("./core/content")
+    require("./core/settings")
+end)
 
-local function add_to_stages()
-    -- Add InteractableCards to stages
-    -- Runs with delayed priority to account for custom stages
-    for _, card in ipairs(interactable_cards) do
-        
-        for id = 0, #Class.Stage - 1 do
-            local stage = Stage.wrap(id)
-            if not Util.table_has(stage_blacklist, stage.namespace.."-"..stage.identifier) then
-                stage:add_interactable(card)
-                -- print("Added '"..card.identifier.."' to stage '"..stage.identifier.."'")
-            end
-        end
-    end
-
-    -- Add guaranteed printers in the Contact Light's Cabin room
-    -- TODO
-end
-
-Initialize.add(init)
-Initialize.add(Callback.Priority.AFTER, add_to_stages)
-
-if hotloaded then
-    init()
-    add_to_stages()
+-- ENVY public setup
+function public.setup()
+    return Util.table_shallow_copy(PnS)
 end

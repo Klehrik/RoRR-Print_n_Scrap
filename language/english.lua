@@ -1,3 +1,5 @@
+local desc = "Does nothing. Prioritized when using printers."
+
 return {
     interactable = {
         printer = {
@@ -9,25 +11,25 @@ return {
     },
 
     item = {
-        scrapWhite = {
+        scrap0 = {
             name        = "Item Scrap (White)",
-            pickup      = "Does nothing. Prioritized when using printers.",
-            description = "Does nothing. Prioritized when using printers."
+            pickup      = desc,
+            description = desc
         },
-        scrapGreen = {
+        scrap1 = {
             name        = "Item Scrap (Green)",
-            pickup      = "Does nothing. Prioritized when using printers.",
-            description = "Does nothing. Prioritized when using printers."
+            pickup      = desc,
+            description = desc
         },
-        scrapRed = {
+        scrap2 = {
             name        = "Item Scrap (Red)",
-            pickup      = "Does nothing. Prioritized when using printers.",
-            description = "Does nothing. Prioritized when using printers."
+            pickup      = desc,
+            description = desc
         },
-        scrapYellow = {
+        scrap4 = {
             name        = "Item Scrap (Yellow)",
-            pickup      = "Does nothing. Prioritized when using printers.",
-            description = "Does nothing. Prioritized when using printers."
+            pickup      = desc,
+            description = desc
         }
     },
 
@@ -36,5 +38,22 @@ return {
         uncommon    = "uncommon",
         rare        = "rare",
         boss        = "boss"
+    },
+
+    ui = {
+        options = {
+            printNScrap = {
+                header                  = "PRINT 'N' SCRAP",
+
+                enablePrinters              = "Enable printers",
+                ["enablePrinters.desc"]     = "Allow printers to spawn.\n\n<y>Uses the host's setting.</c>",
+                
+                enableScrappers             = "Enable scrappers",
+                ["enableScrappers.desc"]    = "Allow scrappers to spawn.\n\n<y>Uses the host's setting.</c>",
+                
+                enableNames                 = "Enable floating names",
+                ["enableNames.desc"]        = "Display floating item names above printers.\n\n<y>Client-sided</c>",
+            }
+        }
     }
 }

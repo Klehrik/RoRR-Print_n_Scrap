@@ -1,5 +1,7 @@
-### v1.1.1
-* Updated to use ReturnsAPI.
+### v1.2.0
+* Update to use ReturnsAPI.
+* Add support for other mods to add printers for custom tiers.
+* Add some toggleable settings.
 
 ### v1.1.0
 * Now multiplayer synced.
@@ -9,7 +11,7 @@
 * Slightly increased scrapper spawn weight.
 
 ### v1.0.1
-* Readded the guaranteed printers on the Contact Light.
+* Readd the guaranteed printers on the Contact Light.
 
 ### v1.0.0
 * Initial release

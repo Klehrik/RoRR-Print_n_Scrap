@@ -12,22 +12,7 @@ local hole_x_offset         = 0     -- Location of the hole of the scrapper rela
 local hole_y_offset         = -26
 local hole_input_scale      = 0     -- Item scale when it enters the scrapper
 
-local max_stack = 10    -- Amount of stacks that can be scrapped at once
-
-local scrap_items = {
-    "printNScrap-scrapWhite",
-    "printNScrap-scrapGreen",
-    "printNScrap-scrapRed",
-    "printNScrap-scrapYellow"
-}
-
-local scrap_items_identifiers = {
-    "scrapWhite",
-    "scrapGreen",
-    "scrapRed",
-    "",
-    "scrapYellow"
-}
+local max_stack = 10    -- Max amount of stacks that can be scrapped at once
 
 
 
@@ -58,7 +43,7 @@ packetUse:set_serializers(
                 sprite  = inst_data.taken.sprite_id,
                 x       = ((inst_data.taken_count - 1) * -17) + ((i - 1) * 34),
                 y       = -48,
-                scale   = 1.0
+                scale   = 1
             })
         end
         inst:sound_play_at(gm.constants.wDroneRecycler_Activate, 1, 1, inst.x, inst.y)
@@ -84,7 +69,6 @@ card.spawn_cost                     = spawn_cost
 card.spawn_weight                   = spawn_weight
 card.default_spawn_rarity_override  = spawn_rarity
 card.decrease_weight_on_spawn       = true
-table.insert(interactable_cards, card)
 
 
 -- Callbacks
@@ -108,10 +92,12 @@ Hook.add_post(gm.constants.interactable_check_cost, function(self, other, result
     local size = #actor.inventory_item_order
     if size > 0 then
         for i = 0, size - 1 do
-            local item = Item.wrap(actor.inventory_item_order:get(i))
+            local item = actor.inventory_item_order:get(i)
 
             -- Pass check if it is not scrap
-            if not Util.table_has(scrap_items, item.namespace.."-"..item.identifier) then
+            -- and has a scrap item for its tier
+            if  (not __scrap_items[item])
+            and (__scrap_items_by_tier[Item.wrap(item).tier]) then
                 return
             end
         end
@@ -146,10 +132,17 @@ Callback.add(obj.on_step, function(inst)
             local arr = Array.new()
             local size = #actor.inventory_item_order
             for i = 0, size - 1 do
-                local item = Item.wrap(actor.inventory_item_order:get(i))
-                if  (not Util.table_has(scrap_items, item.namespace.."-"..item.identifier))
+                local item = actor.inventory_item_order:get(i)
+                local wrapped = Item.wrap(item)
+
+                -- Check:
+                --  * Item is not scrap
+                --  * Item has a scrap item for its tier
+                --  * Non-temp stack count > 0
+                if  (not __scrap_items[item])
+                and (__scrap_items_by_tier[wrapped.tier])
                 and actor:item_count(item, Item.StackKind.NORMAL) > 0 then
-                    arr:push(item.object_id)
+                    arr:push(wrapped.object_id)
                 end
             end
             inst.contents = arr
@@ -232,7 +225,7 @@ Callback.add(obj.on_step, function(inst)
 
     -- Create scrap drop(s) and reset
     elseif inst.active == 7 then
-        local scrap = Item.find(scrap_items_identifiers[inst_data.taken.tier + 1])
+        local scrap = __scrap_items_by_tier[inst_data.taken.tier]
 
         for i = 1, inst_data.taken_count do
             local created = scrap:create(inst_data.hole_x, inst_data.hole_y, inst)
