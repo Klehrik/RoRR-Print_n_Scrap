@@ -42,3 +42,12 @@ for _, stage in ipairs{
     PnS.ban_printers(stage)
     PnS.ban_scrappers(stage)
 end
+
+-- Create guaranteed printers on the Contact Light
+Callback.add(Callback.ON_STAGE_START, function()
+    if Stage.wrap(Global.stage_id).identifier == "riskOfRain" then
+        for tier = 0, 2 do
+            Object.find("printer"..tier):create(7650 + (160 * tier), 3264)
+        end
+    end
+end)
